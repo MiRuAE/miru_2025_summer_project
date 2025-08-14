@@ -31,31 +31,33 @@ cd ~/f1tenth_ws/src
 2. 레포지토리 클론
 
 # Pure Pursuit 패키지
+```bash
 git clone <f1tenth_pp_repo_url>
-
+```
 # Particle Filter Localization 패키지
+```bash
 git clone https://github.com/2025-AILAB-Internship-F1TheBeast/particle_filter_cpp.git
-
+```
 3. 빌드
-
+```bash
 cd ~/f1tenth_ws
 colcon build --symlink-install
 source install/setup.bash
-
+```
 2️⃣ f1tenth_pp 사용법
 (1) 주행 경로 기록
-
+```bash
 ros2 run f1tenth_pp lap_recorder --ros-args \
   -p odom_topic:=/ego_racecar/odom \
   -p csv_path:=/home/<사용자>/maps/raceline_raw.csv
-
+```
     한 바퀴 주행 후 Ctrl + C → 지정한 경로에 CSV 저장됨
 
 (2) 기록된 경로 기반 주행
-
+```bash
 ros2 run f1tenth_pp path_follow_pp --ros-args \
   -p csv_path:=/home/<사용자>/maps/raceline_raw.csv
-
+```
 주요 파라미터
 파라미터 이름	기본값	설명
 csv_path	없음	주행 경로 CSV 파일 경로
@@ -65,10 +67,10 @@ frame_map	"map"	전역 좌표계 이름
 frame_base	"base_link"	차량 기준 좌표계 이름
 3️⃣ particle_filter_cpp 사용법
 실행
-
+```bash
 ros2 run particle_filter_cpp particle_filter --ros-args \
   -p map_file:=/home/<사용자>/maps/map.yaml
-
+```
 주요 기능
 
     /scan 토픽 구독 (라이다 데이터)
@@ -88,30 +90,18 @@ motion_noise	이동 노이즈 표준편차
 4️⃣ 통합 실행 순서
 
     Localization 실행
-
+```bash
 ros2 run particle_filter_cpp particle_filter --ros-args \
   -p map_file:=/home/<사용자>/maps/map.yaml
-
+```
     Pure Pursuit 실행
-
+```bash
 ros2 run f1tenth_pp path_follow_pp --ros-args \
   -p csv_path:=/home/<사용자>/maps/raceline_raw.csv \
   -p frame_map:=map \
   -p frame_base:=base_link \
   -p v_max:=2.0
-
-5️⃣ 문제 해결
-❗ 속도가 너무 빠를 때
-
-ros2 run f1tenth_pp path_follow_pp --ros-args -p v_max:=2.0
-
-❗ LookupException: "map" passed to lookupTransform 에러
-
-    Particle Filter에서 map -> base_link TF가 발행되고 있는지 확인
-
-    임시로 TF 발행
-
-ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 map base_link
+```
 
 📜 라이선스
 
