@@ -1,36 +1,127 @@
-F1TENTH Path Following + MCL Localization
+# 🚗 F1TENTH Pure Pursuit & Particle Filter Integration
 
-f1tenth_pp(래플린 녹화·경로 퍼블리시·Pure Pursuit)와 particle_filter_cpp(MCL 로컬라이제이션)를 함께 사용해 SLAM/맵 기반 위치추정 + 레이싱 라인 추종 주행을 구성하는 방법을 정리했습니다.
+이 프로젝트는 **F1TENTH 플랫폼**에서  
+- **Pure Pursuit 기반 경로 추종(f1tenth_pp)**  
+- **C++ 기반 Particle Filter Localization(particle_filter_cpp)**  
 
-구성 개요
+를 통합하여 자율주행을 구현하는 예제입니다.
 
-Localization: particle_filter_cpp가 map → odom TF를 퍼블리시 (LiDAR + 맵 정합)
+---
 
-Odometry: 시뮬/실차 오도메트리(odom → base_link 또는 ego_racecar/base_link)
+## 📦 패키지 구성
 
-Path Following: f1tenth_pp
+### f1tenth_pp
+- CSV 기반 경로 추종 (Pure Pursuit)
+- 기록된 주행 경로를 불러와 차량을 제어
 
-lap_recorder: 한 바퀴 주행 좌표를 CSV로 기록
+### particle_filter_cpp
+- C++로 작성된 Particle Filter Localization
+- 라이다 데이터를 이용하여 차량 위치를 추정
+- `map -> base_link` 변환(TF) 발행
 
-path_follow_pp: CSV를 nav_msgs/Path로 퍼블리시하고 Pure Pursuit로 /drive 출력
+---
 
-준비물
+## 1️⃣ 설치 방법
 
-ROS 2 Humble
+### 1. ROS 2 워크스페이스 생성
+```bash
+mkdir -p ~/f1tenth_ws/src
+cd ~/f1tenth_ws/src
+```
+2. 레포지토리 클론
 
-토픽
+# Pure Pursuit 패키지
+git clone <f1tenth_pp_repo_url>
 
-/scan : sensor_msgs/LaserScan
+# Particle Filter Localization 패키지
+git clone https://github.com/2025-AILAB-Internship-F1TheBeast/particle_filter_cpp.git
 
-/ego_racecar/odom (또는 /odom) : nav_msgs/Odometry
+3. 빌드
 
-프레임
+cd ~/f1tenth_ws
+colcon build --symlink-install
+source install/setup.bash
 
-기본: map → odom → ego_racecar/base_link (또는 base_link)
+2️⃣ f1tenth_pp 사용법
+(1) 주행 경로 기록
 
-맵 파일
+ros2 run f1tenth_pp lap_recorder --ros-args \
+  -p odom_topic:=/ego_racecar/odom \
+  -p csv_path:=/home/<사용자>/maps/raceline_raw.csv
 
-예: /home/shchon11/sim_ws/maps/my_map.yaml (+ pgm)
+    한 바퀴 주행 후 Ctrl + C → 지정한 경로에 CSV 저장됨
 
-설치
-1) particle_filter_cpp (MCL)
+(2) 기록된 경로 기반 주행
+
+ros2 run f1tenth_pp path_follow_pp --ros-args \
+  -p csv_path:=/home/<사용자>/maps/raceline_raw.csv
+
+주요 파라미터
+파라미터 이름	기본값	설명
+csv_path	없음	주행 경로 CSV 파일 경로
+Ld	1.5	Pure Pursuit Lookahead Distance (m)
+v_max	5.0	최대 속도 (m/s)
+frame_map	"map"	전역 좌표계 이름
+frame_base	"base_link"	차량 기준 좌표계 이름
+3️⃣ particle_filter_cpp 사용법
+실행
+
+ros2 run particle_filter_cpp particle_filter --ros-args \
+  -p map_file:=/home/<사용자>/maps/map.yaml
+
+주요 기능
+
+    /scan 토픽 구독 (라이다 데이터)
+
+    맵 파일 기반 위치 추정
+
+    /pf_pose 토픽에 추정된 차량 위치 발행
+
+    map -> base_link TF 브로드캐스팅
+
+주요 파라미터
+파라미터 이름	설명
+map_file	사용될 맵 파일 경로
+num_particles	파티클 개수
+sensor_noise	센서 노이즈 표준편차
+motion_noise	이동 노이즈 표준편차
+4️⃣ 통합 실행 순서
+
+    Localization 실행
+
+ros2 run particle_filter_cpp particle_filter --ros-args \
+  -p map_file:=/home/<사용자>/maps/map.yaml
+
+    Pure Pursuit 실행
+
+ros2 run f1tenth_pp path_follow_pp --ros-args \
+  -p csv_path:=/home/<사용자>/maps/raceline_raw.csv \
+  -p frame_map:=map \
+  -p frame_base:=base_link \
+  -p v_max:=2.0
+
+5️⃣ 문제 해결
+❗ 속도가 너무 빠를 때
+
+ros2 run f1tenth_pp path_follow_pp --ros-args -p v_max:=2.0
+
+❗ LookupException: "map" passed to lookupTransform 에러
+
+    Particle Filter에서 map -> base_link TF가 발행되고 있는지 확인
+
+    임시로 TF 발행
+
+ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 map base_link
+
+📜 라이선스
+
+MIT License
+
+
+---
+
+원하면 여기에 **토픽 구조도**와 **실행 흐름 다이어그램**까지 넣어서  
+실행 구조가 한눈에 보이도록 할 수도 있습니다.  
+그렇게 하면 GitHub용 README가 더 완성도 있게 나와요.  
+
+원하세요? 제가 그림까지 추가해드릴게요.
