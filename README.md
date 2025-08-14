@@ -1,4 +1,3 @@
-# miru_2025_summer_project
 F1TENTH Path Following + MCL Localization
 
 f1tenth_pp(래플린 녹화·경로 퍼블리시·Pure Pursuit)와 particle_filter_cpp(MCL 로컬라이제이션)를 함께 사용해 SLAM/맵 기반 위치추정 + 레이싱 라인 추종 주행을 구성하는 방법을 정리했습니다.
